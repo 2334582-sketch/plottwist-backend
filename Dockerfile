@@ -1,10 +1,7 @@
-# Etapa 1: Compilar la aplicación con permisos de Administrador
+# Etapa 1: Compilar la aplicación
 FROM gradle:8.5-jdk17 AS build
-USER root
 COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
-# Forzamos los permisos de ejecución del compilador
-RUN chmod +x /home/gradle/src/build.gradle.kts
 RUN gradle build -x test --no-daemon
 
 # Etapa 2: Imagen de ejecución ligera
