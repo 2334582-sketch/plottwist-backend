@@ -7,12 +7,12 @@ import io.ktor.http.*
 
 fun Application.configureRouting() {
     routing {
-        // RUTA PRINCIPAL (Para probar que sirva en el navegador)
+        // RUTA PRINCIPAL (Para probar que el servidor sirva en el navegador)
         get("/") {
             call.respondText("¡Servidor de Historia de México Activo, Jefe!")
         }
 
-        // END-POINT 1: Datos de las Etapas (Servicio para el Front-end)
+        // END-POINT ÚNICO: Datos de las Etapas (Servicio Global para el Front-end)
         get("/etapas") {
             val jsonEtapas = """
                 [
@@ -33,6 +33,33 @@ fun Application.configureRouting() {
                     "preguntaQuiz": "¿En qué año llegaron los españoles a Tenochtitlán?",
                     "opciones": ["1510", "1519", "1521"],
                     "correcta": 1
+                  },
+                  {
+                    "id": 3,
+                    "titulo": "La Independencia: El Grito de Dolores (Rama Ali)",
+                    "introduccion": "Espacio reservado para la introducción de Ali...",
+                    "datoCurioso": "Espacio reservado para el dato curioso de Ali...",
+                    "preguntaQuiz": "Pregunta de Ali pendiente",
+                    "opciones": ["Opción A", "Opción B", "Opción C"],
+                    "correcta": 0
+                  },
+                  {
+                    "id": 4,
+                    "titulo": "La Revolución Mexicana (Rama Ali)",
+                    "introduccion": "Espacio reservado para la introducción de Ali...",
+                    "datoCurioso": "Espacio reservado para el dato curioso de Ali...",
+                    "preguntaQuiz": "Pregunta de Ali pendiente",
+                    "opciones": ["Opción A", "Opción B", "Opción C"],
+                    "correcta": 0
+                  },
+                  {
+                    "id": 5,
+                    "titulo": "México Moderno (Rama Dayana)",
+                    "introduccion": "Espacio reservado para la introducción de Dayana...",
+                    "datoCurioso": "Espacio reservado para el dato curioso de Dayana...",
+                    "preguntaQuiz": "Pregunta de Dayana pendiente",
+                    "opciones": ["Opción A", "Opción B", "Opción C"],
+                    "correcta": 0
                   }
                 ]
             """.trimIndent()
