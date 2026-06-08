@@ -45,7 +45,7 @@ fun Application.configureRouting() {
                   },
                   {
                     "id": 4,
-                    "titulo": "La Revolución Mexicana (Rama Ali)",
+                    "titulo": "La Revolución Mexicana (Rama2)",
                     "introduccion": "Espacio reservado para la introducción de Ali...",
                     "datoCurioso": "Espacio reservado para el dato curioso de Ali...",
                     "preguntaQuiz": "Pregunta de Ali pendiente",
@@ -54,7 +54,7 @@ fun Application.configureRouting() {
                   },
                   {
                     "id": 5,
-                    "titulo": "México Moderno (Rama Dayana)",
+                    "titulo": "México Moderno (Rama1)",
                     "introduccion": "Espacio reservado para la introducción de Dayana...",
                     "datoCurioso": "Espacio reservado para el dato curioso de Dayana...",
                     "preguntaQuiz": "Pregunta de Dayana pendiente",
