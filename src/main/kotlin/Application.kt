@@ -8,10 +8,8 @@ import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
 import java.util.concurrent.ConcurrentHashMap
-import org.json.JSONObject
 
-// 🗄️ BASE DE DATOS DE USUARIOS (Almacena en memoria thread-safe)
-// Si deseas conectar una BD física en Railway como PostgreSQL, esta misma lógica de mapas se sustituye por consultas SQL/Exposed.
+// 🗄️ BASE DE DATOS DE USUARIOS (En memoria)
 val usuariosDatabase = ConcurrentHashMap<String, String>().apply {
     put("admin", "1234")
     put("estudiante", "mexico2026")
@@ -25,9 +23,8 @@ fun main() {
             post("/register") {
                 try {
                     val body = call.receiveText()
-                    val json = JSONObject(body)
-                    val usuario = json.optString("usuario", "").trim()
-                    val password = json.optString("password", "").trim()
+                    val usuario = extraerValorJson(body, "usuario")
+                    val password = extraerValorJson(body, "password")
 
                     if (usuario.isEmpty() || password.isEmpty()) {
                         call.respondText(
@@ -45,19 +42,18 @@ fun main() {
                             HttpStatusCode.Conflict
                         )
                     } else {
-                        // Guardar nuevo usuario en la Base de Datos
                         usuariosDatabase[usuario] = password
                         println("✅ Nuevo usuario registrado en Ktor: $usuario")
 
                         call.respondText(
-                            """{"status": "success", "message": "Usuario registrado exitosamente en el backend."}""",
+                            """{"status": "success", "message": "Usuario registrado exitosamente."}""",
                             ContentType.Application.Json,
                             HttpStatusCode.Created
                         )
                     }
                 } catch (e: Exception) {
                     call.respondText(
-                        """{"status": "error", "message": "Formato JSON inválido."}""",
+                        """{"status": "error", "message": "Error procesando el registro."}""",
                         ContentType.Application.Json,
                         HttpStatusCode.BadRequest
                     )
@@ -68,9 +64,8 @@ fun main() {
             post("/login") {
                 try {
                     val body = call.receiveText()
-                    val json = JSONObject(body)
-                    val usuario = json.optString("usuario", "").trim()
-                    val password = json.optString("password", "").trim()
+                    val usuario = extraerValorJson(body, "usuario")
+                    val password = extraerValorJson(body, "password")
 
                     val passwordRegistrada = usuariosDatabase[usuario]
 
@@ -149,4 +144,10 @@ fun main() {
             }
         }
     }.start(wait = true)
+}
+
+// 🛠️ Función auxiliar nativa para leer llaves de JSON sin librerías externas
+fun extraerValorJson(json: String, clave: String): String {
+    val regex = "\"$clave\"\\s*:\\s*\"([^\"]*)\"".toRegex()
+    return regex.find(json)?.groupValues?.get(1)?.trim() ?: ""
 }
