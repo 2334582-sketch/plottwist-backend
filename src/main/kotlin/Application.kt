@@ -1,4 +1,4 @@
-package com.example
+package com.plottwist.backend
 
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -9,7 +9,7 @@ import io.ktor.server.routing.*
 import io.ktor.http.*
 import java.util.concurrent.ConcurrentHashMap
 
-// 🗄️ BASE DE DATOS DE USUARIOS (En memoria)
+// 🗄️ BASE DE DATOS DE USUARIOS (En memoria thread-safe)
 val usuariosDatabase = ConcurrentHashMap<String, String>().apply {
     put("admin", "1234")
     put("estudiante", "mexico2026")
@@ -91,7 +91,18 @@ fun main() {
                 }
             }
 
-            // 🎮 3. ENDPOINTS DE TRIVIA
+            // 👥 3. CONSULTAR USUARIOS REGISTRADOS (Para demostración con el profesor)
+            get("/usuarios") {
+                val listaUsuarios = usuariosDatabase.keys().toList().joinToString(
+                    prefix = "[",
+                    postfix = "]",
+                    separator = ", "
+                ) { "\"$it\"" }
+
+                call.respondText(listaUsuarios, ContentType.Application.Json)
+            }
+
+            // 🎮 4. ENDPOINTS DE TRIVIA
             get("/prehispanico") {
                 val json = """
                 [
@@ -146,7 +157,7 @@ fun main() {
     }.start(wait = true)
 }
 
-// 🛠️ Función auxiliar nativa para leer llaves de JSON sin librerías externas
+// 🛠️ Función auxiliar para leer JSON
 fun extraerValorJson(json: String, clave: String): String {
     val regex = "\"$clave\"\\s*:\\s*\"([^\"]*)\"".toRegex()
     return regex.find(json)?.groupValues?.get(1)?.trim() ?: ""
