@@ -7,8 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
-import java.sql.Connection
-import java.sql.DriverManager
+import java.sql.*
 import java.util.concurrent.ConcurrentHashMap
 
 // 💾 Memoria local de respaldo
