@@ -23,6 +23,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.8")
     implementation("ch.qos.logback:logback-classic:1.4.14")
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    implementation("org.postgresql:postgresql:42.7.2")
 }
 
 tasks.jar {
