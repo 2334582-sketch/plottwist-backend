@@ -1,7 +1,9 @@
+package com.plottwist.backend
+
 import java.sql.Connection
 import java.sql.DriverManager
 
-object DatabaseConfig {
+object LocalDataBase {
     fun getConnection(): Connection? {
         return try {
             var rawUrl = System.getenv("DATABASE_URL") ?: return null

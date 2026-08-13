@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
+import com.plottwist.backend.*
 
 // Clases DTO para recibir el JSON del Login/Registro desde Android
 @Serializable
