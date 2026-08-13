@@ -7,13 +7,111 @@ import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
+import java.sql.Connection
+import java.sql.DriverManager
 import java.util.concurrent.ConcurrentHashMap
 
+// 💾 Memoria local de respaldo
 val usuariosDatabase = ConcurrentHashMap<String, String>().apply {
     put("admin", "1234")
     put("estudiante", "mexico2026")
 }
 
+// 🔌 Función para conectar a PostgreSQL en Railway
+fun getDbConnection(): Connection? {
+    return try {
+        var rawUrl = System.getenv("DATABASE_URL") ?: return null
+        if (rawUrl.startsWith("postgres://")) {
+            rawUrl = rawUrl.replace("postgres://", "jdbc:postgresql://")
+        } else if (rawUrl.startsWith("postgresql://")) {
+            rawUrl = rawUrl.replace("postgresql://", "jdbc:postgresql://")
+        }
+        DriverManager.getConnection(rawUrl)
+    } catch (e: Exception) {
+        println("⚠️ No se pudo conectar a PostgreSQL, usando respaldo local: ${e.message}")
+        null
+    }
+}
+
+// 🔎 Función para buscar preguntas en PostgreSQL
+fun obtenerPreguntaDB(endpoint: String): String? {
+    var conn: Connection? = null
+    try {
+        conn = getDbConnection() ?: return null
+        val stmt = conn.prepareStatement("SELECT * FROM \"Preguntas_Trivia\" WHERE endpoint = ?")
+        stmt.setString(1, endpoint)
+        val rs = stmt.executeQuery()
+        if (rs.next()) {
+            val id = rs.getInt("id")
+            val historia = rs.getString("historia").replace("\"", "\\\"")
+            val pregunta = rs.getString("pregunta").replace("\"", "\\\"")
+            val opciones = rs.getString("opciones")
+            val correcta = rs.getInt("correcta")
+            val ptPregunta = rs.getString("plot_twist_pregunta").replace("\"", "\\\"")
+            val ptOpciones = rs.getString("plot_twist_opciones")
+            val ptCorrecta = rs.getInt("plot_twist_correcta")
+
+            return """
+            [
+              {
+                "id": $id,
+                "historia": "$historia",
+                "pregunta": "$pregunta",
+                "opciones": $opciones,
+                "correcta": $correcta,
+                "plotTwistPregunta": "$ptPregunta",
+                "plotTwistOpciones": $ptOpciones,
+                "plotTwistCorrecta": $ptCorrecta
+              }
+            ]
+            """.trimIndent()
+        }
+    } catch (e: Exception) {
+        println("⚠️ Error consultando la tabla Preguntas_Trivia: ${e.message}")
+    } finally {
+        conn?.close()
+    }
+    return null
+}
+
+// 👤 Función para registrar usuario en PostgreSQL
+fun registrarUsuarioDB(usuario: String, pass: String): Boolean {
+    var conn: Connection? = null
+    try {
+        conn = getDbConnection() ?: return false
+        val stmt = conn.prepareStatement("INSERT INTO \"Usuarios\" (usuario, password) VALUES (?, ?)")
+        stmt.setString(1, usuario)
+        stmt.setString(2, pass)
+        stmt.executeUpdate()
+        return true
+    } catch (e: Exception) {
+        return false
+    } finally {
+        conn?.close()
+    }
+}
+
+// 🔐 Función para verificar login en PostgreSQL
+fun verificarLoginDB(usuario: String, pass: String): Boolean {
+    var conn: Connection? = null
+    try {
+        conn = getDbConnection() ?: return false
+        val stmt = conn.prepareStatement("SELECT password FROM \"Usuarios\" WHERE usuario = ?")
+        stmt.setString(1, usuario)
+        val rs = stmt.executeQuery()
+        if (rs.next()) {
+            val passDb = rs.getString("password")
+            return passDb == pass
+        }
+    } catch (e: Exception) {
+        return false
+    } finally {
+        conn?.close()
+    }
+    return false
+}
+
+// 🚀 SERVIDOR PRINCIPAL KTOR
 fun main() {
     embeddedServer(Netty, port = System.getenv("PORT")?.toInt() ?: 8080) {
         routing {
@@ -29,7 +127,9 @@ fun main() {
                         return@post
                     }
 
-                    if (usuariosDatabase.containsKey(usuario)) {
+                    // Intenta guardar en Postgres y en Memoria Local
+                    val guardadoDb = registrarUsuarioDB(usuario, password)
+                    if (usuariosDatabase.containsKey(usuario) && !guardadoDb) {
                         call.respondText("""{"status": "error", "message": "El usuario ya existe."}""", ContentType.Application.Json, HttpStatusCode.Conflict)
                     } else {
                         usuariosDatabase[usuario] = password
@@ -46,7 +146,10 @@ fun main() {
                     val usuario = extraerValorJson(body, "usuario")
                     val password = extraerValorJson(body, "password")
 
-                    if (usuariosDatabase[usuario] == password) {
+                    val esValidoDb = verificarLoginDB(usuario, password)
+                    val esValidoMemoria = usuariosDatabase[usuario] == password
+
+                    if (esValidoDb || esValidoMemoria) {
                         call.respondText("""{"status": "success", "usuario": "$usuario"}""", ContentType.Application.Json, HttpStatusCode.OK)
                     } else {
                         call.respondText("""{"status": "error", "message": "Credenciales inválidas."}""", ContentType.Application.Json, HttpStatusCode.Unauthorized)
@@ -63,7 +166,7 @@ fun main() {
 
             // 🎮 Nivel 1: Prehispánico
             get("/prehispanico") {
-                val json = """
+                val jsonHardcoded = """
                 [
                   {
                     "id": 1,
@@ -77,12 +180,14 @@ fun main() {
                   }
                 ]
                 """.trimIndent()
-                call.respondText(json, ContentType.Application.Json)
+
+                val jsonFinal = obtenerPreguntaDB("/prehispanico") ?: jsonHardcoded
+                call.respondText(jsonFinal, ContentType.Application.Json)
             }
 
             // 🎮 Nivel 2: La Conquista
             get("/conquista") {
-                val json = """
+                val jsonHardcoded = """
                 [
                   {
                     "id": 2,
@@ -96,12 +201,14 @@ fun main() {
                   }
                 ]
                 """.trimIndent()
-                call.respondText(json, ContentType.Application.Json)
+
+                val jsonFinal = obtenerPreguntaDB("/conquista") ?: jsonHardcoded
+                call.respondText(jsonFinal, ContentType.Application.Json)
             }
 
             // 🎮 Nivel 3: Independencia
             get("/independencia") {
-                val json = """
+                val jsonHardcoded = """
                 [
                   {
                     "id": 3,
@@ -115,12 +222,14 @@ fun main() {
                   }
                 ]
                 """.trimIndent()
-                call.respondText(json, ContentType.Application.Json)
+
+                val jsonFinal = obtenerPreguntaDB("/independencia") ?: jsonHardcoded
+                call.respondText(jsonFinal, ContentType.Application.Json)
             }
 
             // 🎮 Nivel 4: Revolución Mexicana
             get("/revolucion") {
-                val json = """
+                val jsonHardcoded = """
                 [
                   {
                     "id": 4,
@@ -134,12 +243,14 @@ fun main() {
                   }
                 ]
                 """.trimIndent()
-                call.respondText(json, ContentType.Application.Json)
+
+                val jsonFinal = obtenerPreguntaDB("/revolucion") ?: jsonHardcoded
+                call.respondText(jsonFinal, ContentType.Application.Json)
             }
 
             // 🎮 Nivel 5: México Moderno
             get("/moderno") {
-                val json = """
+                val jsonHardcoded = """
                 [
                   {
                     "id": 5,
@@ -153,7 +264,9 @@ fun main() {
                   }
                 ]
                 """.trimIndent()
-                call.respondText(json, ContentType.Application.Json)
+
+                val jsonFinal = obtenerPreguntaDB("/moderno") ?: jsonHardcoded
+                call.respondText(jsonFinal, ContentType.Application.Json)
             }
         }
     }.start(wait = true)
